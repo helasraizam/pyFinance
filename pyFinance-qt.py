@@ -36,7 +36,7 @@ from pylab import get_current_fig_manager as gcfm
 # layout http://zetcode.com/gui/pyqt5/layout/
 # treeviews https://joekuan.wordpress.com/2016/02/11/pyqt-how-to-hide-top-level-nodes-in-tree-view/
 
-dir=os.getcwd()+'/'
+dir=os.path.dirname(os.path.realpath(sys.argv[0]))+'/'
 global globdata
 version='0.0.0'
 

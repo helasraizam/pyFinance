@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import re,os,csv,datetime,shutil,json,yaml,argparse,openpyxl,sqlite3#sys,string,
+import re,os,sys,csv,datetime,shutil,json,yaml,argparse,openpyxl,sqlite3#sys,string,
 from math import *
 from string import ascii_uppercase as abet
 #import matplotlib as mpl
@@ -31,7 +31,9 @@ import pylab as pl
 #from pylab import get_current_fig_manager as gcfm
 
 dbg=False
-dir=os.getcwd()+'/'
+dir=os.path.dirname(os.path.realpath(sys.argv[0]))+'/'
+
+'version 0.0.0'
 
 
 def main():
