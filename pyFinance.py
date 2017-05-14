@@ -31,7 +31,7 @@ import pylab as pl
 #from pylab import get_current_fig_manager as gcfm
 
 dbg=False
-dir=os.path.dirname(os.getcwd())+'/'
+dir=os.getcwd()+'/'
 
 
 def main():
