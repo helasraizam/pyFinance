@@ -31,8 +31,7 @@ import pylab as pl
 #from pylab import get_current_fig_manager as gcfm
 
 dbg=False
-__file__='/mnt/Helasraizam/Prog/useful/pyFinance/pyFinance.py'
-dir=os.path.dirname(os.path.realpath(__file__))+'/'
+dir=os.path.dirname(os.getcwd())+'/'
 
 
 def main():
