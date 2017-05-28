@@ -128,11 +128,9 @@ class Form(QtWidgets.QWidget):
 
     def _searchSQL(self):
         query=self.searchbar.text()
-        print(query)
-        reply=''
-        for s in m.sql.execute(query):
-            reply+='\n%10s %7.2f %-25s %-30s'%(s[0],s[1],'/'.join([s[3],s[4]]),s[2])
-        self.searchResults.setText(query+'\n'+reply)
+        #print(query)
+        reply=query+'\n'+m.searchSQL(query)
+        self.searchResults.setText(reply)
 
     def _upd(self,s):
         """Find out what was selected in the tree and update label accordingly with selected transactions."""

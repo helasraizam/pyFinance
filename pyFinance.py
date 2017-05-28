@@ -225,6 +225,18 @@ class Account:
         cur.executemany("INSERT INTO t VALUES (?,?,?,?,?);",[[s.date,s.amt,s.descr,s.cat[0],s.cat[1]] for s in transactions])
         return con
 
+    def searchSQL(self,query):
+        reply=''
+        try:
+            for s in self.sql.execute(query):
+                reply+='\n%10s %7.2f %-25s %-30s'%(s[0],s[1],'/'.join([s[3],s[4]]),s[2])
+        except sqlite3.OperationalError as err:
+            reply+="\nError: {}\n".format(err)
+            reply+="Table structure is t(date date,amt real,dscr text,type text,subtype text)\n"
+        except:
+            reply+=sys.exc_info()[0]
+        return reply
+
     def reload(self):
         self.__init__(self.filename,self.settingsFile)
 
