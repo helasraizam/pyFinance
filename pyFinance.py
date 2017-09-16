@@ -291,11 +291,11 @@ class Account:
                         datedTrans.append(i)
         return datedTrans
 
-    def analyzeMonth(self,year,month):
+    def analyzeMonth(self,year,month,showSubtotals=True):
         """month starts at 1"""
         firstDay=datetime.date(year,month,1)
         #[month.replace(day=1),(date.today().replace(day=25)+timedelta(days=10)).month])
-        return self.AnalyzeSpending([firstDay,(firstDay.replace(day=25)+datetime.timedelta(days=10)).replace(day=1)])
+        return self.AnalyzeSpending([firstDay,(firstDay.replace(day=25)+datetime.timedelta(days=10)).replace(day=1)],showSubtotals=showSubtotals)
 
     def subTransactions(self,daterange=None,types=None):
         """return transactions within daterange matching types."""

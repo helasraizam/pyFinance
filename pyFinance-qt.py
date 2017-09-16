@@ -91,9 +91,11 @@ class Form(QtWidgets.QWidget):
         self.tab1=QtWidgets.QWidget()
         self.tab2=QtWidgets.QWidget()
         self.tab3=QtWidgets.QWidget()
+        self.tab4=QtWidgets.QWidget()
         self.tabs.addTab(self.tab1,"Data")
-        self.tabs.addTab(self.tab2,"Graph")
-        self.tabs.addTab(self.tab3,"Search")
+        self.tabs.addTab(self.tab2,"Balance Graph")
+        self.tabs.addTab(self.tab3,"Category Graph")
+        self.tabs.addTab(self.tab4,"Search")
         #self.tab1.addLayout(VB0)
         self.tab1.setLayout(HB1)
  
@@ -101,6 +103,11 @@ class Form(QtWidgets.QWidget):
         VB1=QtWidgets.QVBoxLayout()
         VB1.addWidget(self.graph)
         self.tab2.setLayout(VB1)
+
+        self.tgraph=TypesPlotCanvas(parent=self)
+        VB15=QtWidgets.QVBoxLayout()
+        VB15.addWidget(self.tgraph)
+        self.tab3.setLayout(VB15)
 
         HB3=QtWidgets.QHBoxLayout()
         self.searchbar=QtWidgets.QLineEdit("SELECT * FROM t WHERE type='Utilities'")
@@ -115,7 +122,7 @@ class Form(QtWidgets.QWidget):
         VB3=QtWidgets.QVBoxLayout()
         VB3.addLayout(HB3)
         VB3.addWidget(self.searchResults)
-        self.tab3.setLayout(VB3)
+        self.tab4.setLayout(VB3)
         
         #HB1.addLayout(self._mainMenu())
         VB0.addWidget(self.tabs)
@@ -250,6 +257,7 @@ class Form(QtWidgets.QWidget):
         d2=datetime.date.today()
         d1=d2-relativedelta.relativedelta(months=data['months'])
         self.graph.plot(m.subTransactions([d1,d2]))
+        self.tgraph.plot(m)
         
     def _initMenu(self):
         mbar=QtWidgets.QMenuBar()
@@ -400,7 +408,79 @@ class PlotCanvas(FigureCanvas):
         #ax.set_title('PyQt Matplotlib Example')
         #self.draw()
         
+
+class TypesPlotCanvas(FigureCanvas):
+    def __init__(self, transactions=None, parent=None, width=5, height=4, dpi=100):
+        fig = Figure(figsize=(width, height), dpi=dpi)
+        self.axes = fig.add_subplot(111)
+        self.transactions=transactions
+ 
+        FigureCanvas.__init__(self, fig)
+        self.setParent(parent)
+ 
+        #FigureCanvas.setSizePolicy(self,
+        #QtWidgets.QSizePolicy.Expanding,
+        #QtWidgets.QSizePolicy.Expanding)
+        #FigureCanvas.updateGeometry(self)
+        if self.transactions is not None:
+            #print(self.transactions)
+            self.plot()
         
+    def plot(self,transactions=None):
+        """Plot balance v. time"""
+        self.figure.clf()
+        if transactions is None:
+            transactions=self.transactions
+        #ax=pyfin.linePlot(transactions)
+        ax=self.figure.add_subplot(111)
+        #self.figure.axes.append(ax)
+
+        dates,data=[[],{}]
+        months=6
+        month,year=[datetime.datetime.today().month,datetime.datetime.today().year]
+        for q in transactions.types:
+            data[q]=[]
+        for i in range(month-months+1,month+1):
+            dates.append(datetime.datetime(year-int((i%12-i)/12),int(i%12),1))
+            rawd=list(zip(*transactions.analyzeMonth(year-int((i%12-i)),int(i%12),showSubtotals=False)['totals']))
+            for c in transactions.types:
+                if c in rawd[1]:
+                    data[c].append(abs(rawd[0][rawd[1].index(c)]))
+                else:
+                    data[c].append(0)
+        dath,datl=[{},{}]
+        # bin data into high (>threshold), low (<threshold), and get rid of zeros
+        for q in data:
+            if sum(data[q])>100:
+                dath[q]=data[q]
+            elif sum(data[q])<100:
+                datl[q]=data[q]
+        
+        months=MonthLocator(range(1,13),bymonthday=1,interval=1)
+        monthsFmt=DateFormatter('%b %y')
+
+        for l in dath:
+            #fig,ax=plt.subplots()
+            ax.plot_date(dates,dath[l],'-',label=l)
+
+        ax.xaxis.set_major_locator(months)
+        ax.xaxis.set_major_formatter(monthsFmt)
+        ax.autoscale_view()
+        ax.grid(True)
+        ax.legend()
+        self.figure.autofmt_xdate()
+        #plt.show()
+
+        self.draw()
+        return
+        
+        #data = [random() for i in range(25)]
+        #ax = self.figure.add_subplot(111)
+        #ax.plot(data, 'r-')
+        #ax.set_title('PyQt Matplotlib Example')
+        #self.draw()
+
+
 class openDialog(QtWidgets.QDialog):
     def __init__(self,parent=None):
         super().__init__(parent)
@@ -419,7 +499,7 @@ class openDialog(QtWidgets.QDialog):
 
         self.moyr=QtWidgets.QLineEdit('{}/{}'.format(datetime.date.today().month,datetime.date.today().year))
         self.sbmos=QtWidgets.QSpinBox()
-        self.sbmos.setValue(3)
+        self.sbmos.setValue(6)
         
         ladate='000000'
         for filename in os.listdir(dir+'Data/Debit/'):
