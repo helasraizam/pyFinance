@@ -434,20 +434,22 @@ class TypesPlotCanvas(FigureCanvas):
         #ax=pyfin.linePlot(transactions)
         ax=self.figure.add_subplot(111)
         #self.figure.axes.append(ax)
+        if False:
+            dates,data=[[],{}]
+            months=6
+            month,year=[datetime.datetime.today().month,datetime.datetime.today().year]
+            for q in transactions.types:
+                data[q]=[]
+            for i in range(month-months+1,month+1):
+                dates.append(datetime.datetime(year-int((i%12-i)/12),int(i%12),1))
+                rawd=list(zip(*transactions.analyzeMonth(year-int((i%12-i)),int(i%12),showSubtotals=False)['totals']))
+                for c in transactions.types:
+                    if rawd!=[] and c in rawd[1]:
+                        data[c].append(abs(rawd[0][rawd[1].index(c)]))
+                    else:
+                        data[c].append(0)
 
-        dates,data=[[],{}]
-        months=6
-        month,year=[datetime.datetime.today().month,datetime.datetime.today().year]
-        for q in transactions.types:
-            data[q]=[]
-        for i in range(month-months+1,month+1):
-            dates.append(datetime.datetime(year-int((i%12-i)/12),int(i%12),1))
-            rawd=list(zip(*transactions.analyzeMonth(year-int((i%12-i)),int(i%12),showSubtotals=False)['totals']))
-            for c in transactions.types:
-                if c in rawd[1]:
-                    data[c].append(abs(rawd[0][rawd[1].index(c)]))
-                else:
-                    data[c].append(0)
+        dates,data=transactions.getMonthlyExpenditures()
         dath,datl=[{},{}]
         # bin data into high (>threshold), low (<threshold), and get rid of zeros
         for q in data:

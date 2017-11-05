@@ -31,7 +31,7 @@ import pylab as pl
 #from pylab import get_current_fig_manager as gcfm
 
 dbg=False
-dir=os.path.dirname(os.path.realpath(sys.argv[0]))+'/'
+myPath=os.path.dirname(os.path.realpath(sys.argv[0]))+'/'
 
 'version 0.0.0'
 
@@ -165,7 +165,7 @@ def AnalyzeMonthlySpendingTypes(data,monthsback=24,filename='MonthlyAnalysis.xsl
             ws['A{}'.format(i+2)].value=m
             for j in range(len(moSpending[m])):
                 ws['{}{}'.format(abet[j+1],i+2)].value=moSpending[m][j]    
-    wb.save(filename=dir+'/output/{}'.format(filename))
+    wb.save(filename=myPath+'/output/{}'.format(filename))
 
 
 class transaction:
@@ -195,7 +195,7 @@ class Account:
 
     def __loadTransactions(self,filename):
         transactions=[]
-        with open(dir+'Data/Debit/'+filename) as f: # Debit
+        with open(myPath+'Data/Debit/'+filename) as f: # Debit
             fcsv=csv.reader(f)
             for row in fcsv:
                 #print(row)
@@ -205,10 +205,10 @@ class Account:
                     transactions.append(transaction(row[1],row[3],row[2],self.getType(row[2]),row[4]))
         if 'Accounts' in self.advanced:  # of the form '#Advanced':{"Accounts":[["regexp match for transfers","account name"],..]}
             for q in self.advanced['Accounts']:
-                if not os.path.isfile(dir+'Data/%s/%s'%(q[1],filename)):
-                    print('Warning: Account file "%s" does not exist.  Edit Settings/#Advanced/Accounts to fix or add file to directory.'%(dir+'Data/%s/%s'%(q[1],filename)))
+                if not os.path.isfile(myPath+'Data/%s/%s'%(q[1],filename)):
+                    print('Warning: Account file "%s" does not exist.  Edit Settings/#Advanced/Accounts to fix or add file to directory.'%(myPath+'Data/%s/%s'%(q[1],filename)))
                 else:
-                    with open(dir+'Data/%s/%s'%(q[1],filename)) as f: # Secondary account
+                    with open(myPath+'Data/%s/%s'%(q[1],filename)) as f: # Secondary account
                         fcsv=csv.reader(f)
                         for row in fcsv:
                             if '#' in row[-1] or not all([q.isnumeric() for q in row]):
@@ -250,16 +250,16 @@ class Account:
     def loadSettings(self,filename='Settings.json'):
         """Parses Settings json/yaml file and separates advanced settings (in 'advanced' key of dictionary), returns (Types,Advanced)."""
         advanced={};types={}
-        if not os.path.isfile(dir+'Settings/'+filename):
-            print('No Settings file %s found.  Creating new Settings file.'%(dir+'Settings/'+filename))
-            shutil.copy2('Settings_blank.json',dir+'Settings/'+filename)
-        with open(dir+'Settings/'+filename,'r') as settings:
+        if not os.path.isfile(myPath+'Settings/'+filename):
+            print('No Settings file %s found.  Creating new Settings file.'%(myPath+'Settings/'+filename))
+            shutil.copy2('Settings_blank.json',myPath+'Settings/'+filename)
+        with open(myPath+'Settings/'+filename,'r') as settings:
             if filename.split('.')[1]=='json':
                 types=json.load(settings)
             elif filename.split('.')[1]=='yaml':
                 types=yaml.load(settings.read())
             else:
-                printError('Could not parse settings file "%s".  Ensure the file has a json or yaml extension.'%(dir+'Settings/'+filename))
+                printError('Could not parse settings file "%s".  Ensure the file has a json or yaml extension.'%(myPath+'Settings/'+filename))
         if '#Advanced' in types:
             # Eg, "#Advanced":{"Accounts":[["PPD ID: 123456789","Credit"],..]}
             for advancedOption in types['#Advanced']:
@@ -399,6 +399,23 @@ class Account:
         return y[:min(5,len(y))]
         #print(sum(signal)/(edate-sdate).days*7)
 
+    def getMonthlyExpenditures(self,months=6):
+        """Get monthly expenditures by category from month going back months."""
+        dates,data=[[],{}]
+        month,year=[datetime.datetime.today().month,datetime.datetime.today().year]
+        for q in self.types:
+            data[q]=[]
+        for i in range(month-months+1,month+1):
+            dates.append(datetime.datetime(year-int((i%12-i)/12),int(i%12),1))
+            rawd=list(zip(*self.analyzeMonth(year-int((i%12-i)),int(i%12),showSubtotals=False)['totals']))
+            print(rawd)
+            for c in self.types:
+                if len(rawd)>0 and c in rawd[1]:
+                    data[c].append(abs(rawd[0][rawd[1].index(c)]))
+                else:
+                    data[c].append(0)
+        return [dates,data]
+
         
 def AnalyzeSpending(transactions,daterange,show=True,showSubtotals=True):
     """Bins transactions into subtypes within daterange=[beginDate,endDate].  
@@ -436,7 +453,7 @@ def AnalyzeSpending(transactions,daterange,show=True,showSubtotals=True):
 
 def listTransactions(transactions,filename='Transactions'):
     total=0.
-    with open(dir+filename+'.dmp','w') as f:
+    with open(myPath+filename+'.dmp','w') as f:
         for s in transactions:
             total=total-s.amt
             f.write('%8.2f\t%8.2f\t%10s\t%s\n'%(1,s.amt,s.date,s.descr))
