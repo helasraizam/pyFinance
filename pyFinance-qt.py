@@ -59,6 +59,7 @@ class Form(QtWidgets.QWidget):
 
         self.data=[]
         self.mbar=self._initMenu()
+        self.types=None
         self._initLayout()
         self.OpenFileprompt=openDialog()
 
@@ -76,7 +77,7 @@ class Form(QtWidgets.QWidget):
         self.tree.clicked.connect(self._upd)
         HB1.addWidget(self.tree)
         HB1.addLayout(VB2)
-
+        
         self.lblMain=QtWidgets.QTextEdit('Open a file to begin.')
         self.lblMain.setLineWrapMode(self.lblMain.NoWrap)
         f=QtGui.QFont('Monospace',8)
@@ -92,10 +93,12 @@ class Form(QtWidgets.QWidget):
         self.tab2=QtWidgets.QWidget()
         self.tab3=QtWidgets.QWidget()
         self.tab4=QtWidgets.QWidget()
+        self.tab5=QtWidgets.QWidget()
         self.tabs.addTab(self.tab1,"Data")
         self.tabs.addTab(self.tab2,"Balance Graph")
         self.tabs.addTab(self.tab3,"Category Graph")
-        self.tabs.addTab(self.tab4,"Search")
+        self.tabs.addTab(self.tab4,"Spending")
+        self.tabs.addTab(self.tab5,"Search")
         #self.tab1.addLayout(VB0)
         self.tab1.setLayout(HB1)
  
@@ -108,6 +111,13 @@ class Form(QtWidgets.QWidget):
         VB15=QtWidgets.QVBoxLayout()
         VB15.addWidget(self.tgraph)
         self.tab3.setLayout(VB15)
+
+        self.table=QtWidgets.QTableWidget()
+        #self.dbgtab4=self.searchResults=QtWidgets.QTextEdit("Debug")
+        VB16=QtWidgets.QVBoxLayout()
+        VB16.addWidget(self.table)
+        #VB16.addWidget(self.dbgtab4)
+        self.tab4.setLayout(VB16)
 
         HB3=QtWidgets.QHBoxLayout()
         self.searchbar=QtWidgets.QLineEdit("SELECT * FROM t WHERE type='Utilities'")
@@ -122,7 +132,7 @@ class Form(QtWidgets.QWidget):
         VB3=QtWidgets.QVBoxLayout()
         VB3.addLayout(HB3)
         VB3.addWidget(self.searchResults)
-        self.tab4.setLayout(VB3)
+        self.tab5.setLayout(VB3)
         
         #HB1.addLayout(self._mainMenu())
         VB0.addWidget(self.tabs)
@@ -183,14 +193,50 @@ class Form(QtWidgets.QWidget):
     def _show(self,d):
         #self.lblMain.setText(d)
         self._popTree(d)
+        self._popTable(d)
                             
+    def _popTable(self,data):
+        """Populate table with monthly data by categories, side-by-side."""
+        orderedtypes=[s for s in self.types]
+        self.table.setRowCount(len(orderedtypes))
+        self.table.setColumnCount(len(data)+1)  # +1 for average
+        self.table.setHorizontalHeaderLabels([' '.join(s['name'].split(' ')[::-1]) for s in data]+['Average'])
+        #self.table.setItem(0,0, QtWidgets.QTableWidgetItem("Cell (1,1)"))
+        #self.dbgtab4.setText(' '.join([str(len(s['totals']))+'\n\t'+' '.join(str(s['totals']))+'\n' for s in data]))
+        #self.dbgtab4.setText(' '.join(orderedtypes))
+        datas=[];totals={}
+        for q,mo in enumerate(data):
+            datas.append({})
+            for p in mo['totals']:
+                datas[-1][p[1]]=p[0]
+                if q<len(data)-1:
+                    totals[p[1]]=totals[p[1]]+p[0] if p[1] in totals else p[0]
+            #for j,cat in enumerate(orderedtypes):
+                #print(mo['totals'])
+                #datas[-1][cat]=mo['totals'][cat]
+        #self.dbgtab4.setText('\n'.join(datas))
+        orderedtypes=sorted(orderedtypes,key=lambda x: abs(totals[x]),reverse=True)
+        self.table.setVerticalHeaderLabels(orderedtypes)
+        
+        for j,mo in enumerate(data):
+            for i,cat in enumerate(orderedtypes):#enumerate(mo['totals']):
+                #self.table.setItem(i,0,QtWidgets.QTableWidgetItem(cat))
+                item=QtWidgets.QTableWidgetItem('%.02f'%(round(datas[j][cat]*100)/100))
+                item.setTextAlignment(QtCore.Qt.AlignRight)
+                self.table.setItem(i,j,item)
+
+        for i,cat in enumerate(orderedtypes):
+            item=QtWidgets.QTableWidgetItem('%.02f'%(round(totals[cat]*100)/((len(data)-1)*100)))
+            item.setTextAlignment(QtCore.Qt.AlignRight)
+            self.table.setItem(i,len(data),item)
+         
     def _popTree(self,data):
         """Populate treeview with monthly data."""
         model=QtGui.QStandardItemModel()
         model.setColumnCount(2)
         model.setHorizontalHeaderLabels(['Spent','Category'])
         #model.setData(0,QtCore.QVariant(QtCore.Qt.AlignRight),QtCore.Qt.TextAlignmentRole)
-        self.tree
+        #self.tree
         #model.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
         root=model.invisibleRootItem()
         #print(data)
@@ -251,8 +297,9 @@ class Form(QtWidgets.QWidget):
             data=globdata
 
         m=pyfin.Account(data['dataFile']+'.csv',settingsFile=data['settingsFile'])
+        self.types=m.types
         month,year=[int(i) for i in data['moyr'].split('/')]
-        self.d=pyfin.spendingTablesSubtypes(m,month,year,data['months'],lists=None)
+        self.d=pyfin.spendingTablesSubtypes(m,month,year,data['months'],lists=None,showZeros=True)
         self._show(self.d)
         d2=datetime.date.today()
         d1=d2-relativedelta.relativedelta(months=data['months'])
@@ -298,7 +345,7 @@ class Form(QtWidgets.QWidget):
     def _about(self):
         """display version number."""
         global version
-        QtWidgets.QMessageBox.information(self,'pyFinance v. %s'%version,'pyFinance v. %s (c) 2017 Maziar Saleh Ziabari.'%version)
+        QtWidgets.QMessageBox.information(self,'pyFinance v. %s'%version,'pyFinance v. %s (c) 2018 Maziar Saleh Ziabari.'%version)
     
     def _editSettings(self):
         'Edit Settings file.'

@@ -78,17 +78,14 @@ def fourierAnalyzeData(acct):
     #     can be analyzed automatically.
 
     
-def spendingTablesSubtypes(account,month,year,months,lists):
+def spendingTablesSubtypes(account,month,year,months,lists,showZeros=False):
     """Output tables of montly expenditures by subtype.  To see how the output is parsed, visit pyFinance-qt.py::Form._popTree()."""
     #print(month,year,months)
     data=[]
     monthsn=('January','February','March','April','May','June','July',
              'August','September','October','November','December')
-    for i in range(month-months+1,month+1): # TODO: fix for months>12
-        if i<=0:      # last year
-            data.append(dict(list(account.analyzeMonth(year-1,i+12).items())+list({'name':'%d %s'%(year,monthsn[i+11])}.items())))
-        else:
-            data.append(dict(list(account.analyzeMonth(year,i).items())+list({'name':'%d %s'%(year,monthsn[i-1])}.items())))
+    for (oldyear,oldmonth) in getMonthsBack(year,month,months):
+        data.append(dict(list(account.analyzeMonth(oldyear,oldmonth,showZeros=showZeros).items())+list({'name':'%d %s'%(oldyear,monthsn[oldmonth-1])}.items())))
 
     if lists is not None and False:
         [moyri,tpstp]=lists.split(':')
@@ -291,11 +288,11 @@ class Account:
                         datedTrans.append(i)
         return datedTrans
 
-    def analyzeMonth(self,year,month,showSubtotals=True):
+    def analyzeMonth(self,year,month,showSubtotals=True,showZeros=False):
         """month starts at 1"""
         firstDay=datetime.date(year,month,1)
         #[month.replace(day=1),(date.today().replace(day=25)+timedelta(days=10)).month])
-        return self.AnalyzeSpending([firstDay,(firstDay.replace(day=25)+datetime.timedelta(days=10)).replace(day=1)],showSubtotals=showSubtotals)
+        return self.AnalyzeSpending([firstDay,(firstDay.replace(day=25)+datetime.timedelta(days=10)).replace(day=1)],showSubtotals=showSubtotals,showZeros=showZeros)
 
     def subTransactions(self,daterange=None,types=None):
         """return transactions within daterange matching types."""
@@ -306,7 +303,7 @@ class Account:
                     data.append(t)
         return data
 
-    def AnalyzeSpending(self,daterange,show=True,showSubtotals=True):
+    def AnalyzeSpending(self,daterange,show=True,showSubtotals=True,showZeros=False):
         """Bins transactions into subtypes within daterange=[beginDate,endDate].  
            Transactions must be sorted."""
         totes=[];txt=''#data=[];
@@ -332,7 +329,7 @@ class Account:
                     
         txt+='Amount spent: $%.2f\n'%(sum([totals[s] for s in totals]))
         for s in sorted(ntypes,key=lambda l:abs(totals[l]),reverse=True):
-            if totals[s]!=0:
+            if showZeros or totals[s]!=0:
                 txt+='%-22s ($%8.2f)\n'%(s,totals[s])
                 totes.append([totals[s],s])
                 if showSubtotals:
@@ -405,16 +402,24 @@ class Account:
         month,year=[datetime.datetime.today().month,datetime.datetime.today().year]
         for q in self.types:
             data[q]=[]
-        for i in range(month-months+1,month+1):
-            dates.append(datetime.datetime(year-int((i%12-i)/12),int(i%12),1))
-            rawd=list(zip(*self.analyzeMonth(year-int((i%12-i)),int(i%12),showSubtotals=False)['totals']))
-            print(rawd)
+        for (oldyear,oldmonth) in getMonthsBack(year,month,months):
+            dates.append(datetime.datetime(oldyear,oldmonth,1))
+            rawd=list(zip(*self.analyzeMonth(oldyear,oldmonth,showSubtotals=False)['totals']))
+            #print(rawd)
             for c in self.types:
                 if len(rawd)>0 and c in rawd[1]:
                     data[c].append(abs(rawd[0][rawd[1].index(c)]))
                 else:
                     data[c].append(0)
         return [dates,data]
+
+    
+def getMonthsBack(year,month,months):
+    """Return array of [[year,month],...] going back [months] months from [year],[month] to [year],[month].  Months start at 1."""
+    yearmonths=[]
+    for i in range(month-months+1,month+1):
+        yearmonths.append([year-int(((i-1)%12+1-i)/12),int((i-1)%12+1)])
+    return yearmonths
 
         
 def AnalyzeSpending(transactions,daterange,show=True,showSubtotals=True):
