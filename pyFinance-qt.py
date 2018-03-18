@@ -43,6 +43,7 @@ version='0.0.0'
 
 def main():
     global m,globdata
+    global screen
     m=pyfin.Account()
     globdata={}
     globdata['settingsFile']='Settings.json'
@@ -192,8 +193,9 @@ class Form(QtWidgets.QWidget):
 
     def _show(self,d):
         #self.lblMain.setText(d)
-        self._popTree(d)
         self._popTable(d)
+        
+        self._popTree(d)
                             
     def _popTable(self,data):
         """Populate table with monthly data by categories, side-by-side."""
@@ -251,17 +253,18 @@ class Form(QtWidgets.QWidget):
             b=QtGui.QStandardItem(monthn)
             root.appendRow([a,b])
             for ntype in mtotes:
-                an=QtGui.QStandardItem(str(round(ntype[0]*100)/100))
-                bn=QtGui.QStandardItem(ntype[1])
-                #an.setTextAlignment(ral)
-                a.appendRow([an,bn])
-                #rooti.appendRow([cb])
-                for nntype in ntype[2:]:
-                    ann=QtGui.QStandardItem(str(round(nntype[0]*100)/100))
-                    #ann.setTextAlignment(ral)
-                    bnn=QtGui.QStandardItem(nntype[1])
-                    
-                    an.appendRow([ann,bnn])
+                if ntype[0]!=0:  # disclude categories with zero net spending.
+                    an=QtGui.QStandardItem(str(round(ntype[0]*100)/100))
+                    bn=QtGui.QStandardItem(ntype[1])
+                    #an.setTextAlignment(ral)
+                    a.appendRow([an,bn])
+                    #rooti.appendRow([cb])
+                    for nntype in ntype[2:]:
+                        if nntype[0]!=0:  # disclude subcategories with zero net spending.
+                            ann=QtGui.QStandardItem(str(round(nntype[0]*100)/100))
+                            #ann.setTextAlignment(ral)
+                            bnn=QtGui.QStandardItem(nntype[1])
+                            an.appendRow([ann,bnn])
 
         self.tree.setModel(model)
         #self.tree.setEditTriggers(self.tree.SelectedClicked)
@@ -489,7 +492,7 @@ class TypesPlotCanvas(FigureCanvas):
                 data[q]=[]
             for i in range(month-months+1,month+1):
                 dates.append(datetime.datetime(year-int((i%12-i)/12),int(i%12),1))
-                rawd=list(zip(*transactions.analyzeMonth(year-int((i%12-i)),int(i%12),showSubtotals=False)['totals']))
+                rawd=list(zip(*transactions.analyzeMonth(year-int((i%12-i)),int(i%12))['totals']))
                 for c in transactions.types:
                     if rawd!=[] and c in rawd[1]:
                         data[c].append(abs(rawd[0][rawd[1].index(c)]))
