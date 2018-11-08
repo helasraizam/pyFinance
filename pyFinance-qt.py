@@ -64,7 +64,7 @@ class Form(QtWidgets.QWidget):
         self._initLayout()
         self.OpenFileprompt=openDialog()
 
-    def _initLayout(self):
+    def _initLayout(self,months=6):
         VB0=QtWidgets.QVBoxLayout()
         HB1=QtWidgets.QVBoxLayout()
         VB2=QtWidgets.QVBoxLayout()
@@ -108,7 +108,7 @@ class Form(QtWidgets.QWidget):
         VB1.addWidget(self.graph)
         self.tab2.setLayout(VB1)
 
-        self.tgraph=TypesPlotCanvas(parent=self)
+        self.tgraph=TypesPlotCanvas(parent=self,months=months)
         VB15=QtWidgets.QVBoxLayout()
         VB15.addWidget(self.tgraph)
         self.tab3.setLayout(VB15)
@@ -307,7 +307,7 @@ class Form(QtWidgets.QWidget):
         d2=datetime.date.today()
         d1=d2-relativedelta.relativedelta(months=data['months'])
         self.graph.plot(m.subTransactions([d1,d2]))
-        self.tgraph.plot(m)
+        self.tgraph.plot(m,data['months'])
         
     def _initMenu(self):
         mbar=QtWidgets.QMenuBar()
@@ -460,7 +460,7 @@ class PlotCanvas(FigureCanvas):
         
 
 class TypesPlotCanvas(FigureCanvas):
-    def __init__(self, transactions=None, parent=None, width=5, height=4, dpi=100):
+    def __init__(self, transactions=None, parent=None, width=5, height=4, dpi=100, months=6):
         fig = Figure(figsize=(width, height), dpi=dpi)
         self.axes = fig.add_subplot(111)
         self.transactions=transactions
@@ -474,10 +474,11 @@ class TypesPlotCanvas(FigureCanvas):
         #FigureCanvas.updateGeometry(self)
         if self.transactions is not None:
             #print(self.transactions)
-            self.plot()
+            self.plot(months=months)
         
-    def plot(self,transactions=None):
+    def plot(self,transactions=None,months=6):
         """Plot balance v. time"""
+        print('months',months)
         self.figure.clf()
         if transactions is None:
             transactions=self.transactions
@@ -486,7 +487,6 @@ class TypesPlotCanvas(FigureCanvas):
         #self.figure.axes.append(ax)
         if False:
             dates,data=[[],{}]
-            months=6
             month,year=[datetime.datetime.today().month,datetime.datetime.today().year]
             for q in transactions.types:
                 data[q]=[]
@@ -499,7 +499,7 @@ class TypesPlotCanvas(FigureCanvas):
                     else:
                         data[c].append(0)
 
-        dates,data=transactions.getMonthlyExpenditures()
+        dates,data=transactions.getMonthlyExpenditures(months)
         dath,datl=[{},{}]
         # bin data into high (>threshold), low (<threshold), and get rid of zeros
         for q in data:
